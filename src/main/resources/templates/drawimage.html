@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <meta charset="utf-8">
+    <script  src="jquery-3.6.0.min.js"></script>
+    <script src="jquery-ui.js"></script>
+    <script src="html2canvas.js"></script>
+    <!--<script src="html2canvas.min.js"></script>-->
+    <style>
+        input::-webkit-input-placeholder {
+            color: mediumspringgreen;
+            font-size: 24px;
+            font-weight: bold;
+            font-family: bold;
+        }
+
+    </style>
+    <title></title>
+
+</head>
+<body onload="init()">
+Stroke color:
+<select id="strokeStyleSelect">
+
+    <option value="red" >red</option>
+    <option value="green">green</option>
+    <option value="blue">blue</option>
+    <option value="orange">orange</option>
+    <option value="">none</option>
+</select>
+<button id="add">add word</button>
+<button id="add1">add arrowline</button>
+<button id="erase">undo word</button>
+<button id ="undo"> undo image</button>
+<button id="submit"> submit</button>
+<div id="ddiv1"style="position:relative;width:1200px;height:800px">
+    <canvas id="canvas" width="1200" height="800" zindex="1" style="z-index: 1"></canvas>
+    <div id="test">
+
+    </div>
+</div>
+
+
+select font:
+<select id="selectfont">
+
+    <option value="red" >微软雅黑</option>
+    <option value="green">Times New Roman</option>
+    <option value="blue">Georgia</option>
+    <option value="orange">Serif</option>
+</select>
+font size
+<input id="size" />
+</body>
+<script type="text/javascript">
+    var canvas = document.getElementById("canvas");
+    var context = canvas.getContext("2d");
+    var startlocation=0,finalocation=0;
+    var eraser = document.getElementById("erase");
+    var counter=0;
+    var strokeStyleSelect = document.getElementById("strokeStyleSelect");
+    var font=document.getElementById("selectfont");
+    var drawingSurfacsImageData = null;
+    var mousedown = {};
+    var dragging = false;
+    var loc=null;
+    var fla=document.getElementById("add");
+    var add1=document.getElementById("add1");
+    var flag=false;
+    var flag1=false;
+    var cPushArray = new Array();
+    var cStep = -1;
+    var undo =document.getElementById("undo");
+    var ctx;
+    var submit =document.getElementById("submit");
+    context.strokeStyle = strokeStyleSelect.value;
+    context.lineWidth="7";
+    drawHorizontLine(0);
+    drawVerticalLine(0);
+    $(function(){
+
+        $('.test').draggable();
+    });
+    function windowToCanvas(x, y) {
+        var bbox = canvas.getBoundingClientRect();
+        return {
+            x : x - bbox.left * (canvas.width / bbox.width),
+            y : y - bbox.top * (canvas.height / bbox.width)
+        };
+    }
+    function saveDrawingSurface() {
+        drawingSurfacsImageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    }
+    function restoreDrawingSurface() {
+        context.putImageData(drawingSurfacsImageData,
+            0, 0, 0, 0, canvas.width, canvas.height
+        );
+    }
+
+
+
+    function  updateRubberband(loc) {
+
+        drawRubberbandShape(loc);
+    }
+
+    function drawRubberbandShape(loc) {
+        context.beginPath();
+        context.moveTo(mousedown.x, mousedown.y);
+        context.lineTo(loc.x, loc.y);
+        context.stroke();
+        //context.translate(loc.x,loc.y);
+
+        //ctx.restore()
+
+        }
+
+    function drawHorizontLine(y) {
+        context.beginPath();
+        context.moveTo(0, y+0.5);
+
+        context.lineTo(canvas.width, y+0.5);
+        context.stroke();
+    }
+
+    function drawVerticalLine(x) {
+        context.beginPath();
+        context.moveTo(x+0.5, 0);
+        context.lineTo(x+0.5,canvas.height);
+        context.stroke();
+    }
+
+
+    canvas.onmousedown = function(e) {
+        if(flag1 && !flag) {
+            loc = windowToCanvas(e.clientX, e.clientY);
+            startlocation = e.clientX;
+            finalocation = e.clientY;
+
+            dragging = true;
+
+            e.preventDefault();
+            saveDrawingSurface();
+            mousedown.x = loc.x;
+            mousedown.y = loc.y;
+            dragging = true;
+            inix = loc.x;
+            iniy = loc.y;
+        }
+
+    }
+    canvas.onclick=function (e) {
+
+        container=document.getElementById("test")
+        if(flag==true) {
+            var input = document.createElement("div");
+            var color=strokeStyleSelect.value;
+            var sizee=size.value +"px";
+            input.id="hi"+counter;
+            input.zindex=9999;
+            input.contentEditable=true;
+            fontfami=font.value;
+            input.class="test";
+            var newContent = document.createTextNode("place your text here");
+            input.appendChild(newContent);
+            xcoor=(e.x-10)+"px";
+            ycoor=(e.y-32)+"px";
+            input.style="position:absolute;left:"+ xcoor +";top:"+ycoor+";width 100px; color:"+color
+            +";font-size:" +sizee+"; font-family: "+fontfami+";";
+            flag=false;
+
+            container.appendChild(input);
+            $('#hi'+counter).draggable();
+            counter=counter+1;
+
+        }
+
+
+    }
+
+    canvas.onmousemove = function(e){
+
+        if(dragging ) {
+            e.preventDefault();
+            loc = windowToCanvas(e.clientX, e.clientY);
+
+            restoreDrawingSurface();
+            updateRubberband(loc);
+
+        }
+    };
+    function fileDownload(downloadUrl){
+        var aLink = document.createElement('a');
+        aLink.style.display = 'none';
+        aLink.href = downloadUrl;
+        aLink.download = "modefiy.png";
+
+        document.body.appendChild(aLink);
+        aLink.click();
+        document.body.removeChild(aLink);
+    }
+
+    submit.onclick=function(){
+        var img= new Image();
+        html2canvas(document.querySelector("#ddiv1")).then(function(can) {
+
+
+
+            img  = can.toDataURL("image/png");
+
+            fileDownload(img);
+
+
+        });
+
+    }
+
+    eraser.onclick = function(e){
+
+        if(counter>0) {
+                b = document.getElementById("hi"+(counter-1));
+
+                container.removeChild(b);
+                counter=counter-1;
+
+
+            //counter = 0;
+            flag=false;
+        }
+
+    };
+    undo.onclick=function () {
+        ctx = document.getElementById('canvas').getContext("2d");
+
+        if (cStep > 0) {
+            cStep--;
+            var canvasPic = new Image();
+            canvasPic.src = cPushArray[cStep];
+            canvasPic.onload = function () { ctx.drawImage(canvasPic, 0, 0); }
+        }
+    }
+    canvas.onmouseup = function(e) {
+        if(flag1 &&!flag) {
+            loc = windowToCanvas(e.clientX, e.clientY);
+            dragging = false;
+            restoreDrawingSurface();
+            updateRubberband(loc);
+            var endRadians = Math.atan((loc.y - mousedown.y) / (loc.x - mousedown.x));
+            endRadians += ((loc.x > mousedown.x) ? 90 : -90) * Math.PI / 180;
+            drawhead(context, loc, endRadians);
+            cStep++;
+            if (cStep < cPushArray.length) {
+                cPushArray.length = cStep;
+            }
+            cPushArray.push(document.getElementById('canvas').toDataURL());
+            flag1=false;
+        }
+
+
+    }
+
+    fla.onclick=function(){
+
+        flag=true;
+        flag1=false;
+
+    }
+    add1.onclick=function () {
+        flag1=true;
+        flag=false;
+    }
+
+    function drawhead(context,loca,radiaus){
+        context.save();
+        context.beginPath();
+        context.translate(loca.x,loca.y);
+        context.rotate(radiaus);
+        context.moveTo(0,-10);
+        context.lineTo(15,20);
+        context.lineTo(-15,20);
+        context.closePath();
+        context.restore();
+        context.fillStyle= strokeStyleSelect.value;
+
+        context.fill();
+    }
+    strokeStyleSelect.onchange = function(e){
+        context.strokeStyle = strokeStyleSelect.value;
+
+    };
+
+
+
+    function init() {
+
+        var cv = document.getElementById("canvas");
+
+        var ctx = cv.getContext('2d');
+
+        var img = new Image();
+
+        img.src = "123.jpg";
+
+
+        img.onload = function(){
+            ctx.drawImage(img, 0,0,1200, 800);
+            cStep++;
+            if (cStep < cPushArray.length) { cPushArray.length = cStep; }
+            cPushArray.push(document.getElementById('canvas').toDataURL());
+        }
+
+    }
+    context.strokeStyle = strokeStyleSelect.value;
+
+    init()
+
+</script>
+</html>
